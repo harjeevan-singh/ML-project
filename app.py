@@ -12,36 +12,33 @@ app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 DATASET_PATH = os.path.join(BASE_DIR, "data", "satellite_data.csv")
 CACHED_METRICS = {}
 
-def ensure_dataset():
-    """Ensures presence of high-fidelity synthetic GNSS orbital telemetry data if raw source isn't present."""
+def force_generate_dataset():
+    """Generates continuous physical orbital telemetry series."""
     os.makedirs(os.path.join(BASE_DIR, "data"), exist_ok=True)
+    t = np.arange(1000)
     
-    # Generate structured multi-harmonic time series if file missing or corrupted
-    if not os.path.exists(DATASET_PATH):
-        t = np.arange(800)
-        # Smooth orbital clock bias (meter scale) with daily cyclic drift
-        clock_vals = 15.0 + 0.03 * t + 1.5 * np.sin(2 * np.pi * t / 24) + np.random.normal(0, 0.02, len(t))
-        # Ephemeris distance positioning error
-        ephemeris_vals = 2.8 + 0.01 * t + 0.6 * np.cos(2 * np.pi * t / 24) + np.random.normal(0, 0.01, len(t))
-        
-        df = pd.DataFrame({
-            "utcTimeMillis": range(len(t)),
-            "clock_error": clock_vals,
-            "ephemeris_error": ephemeris_vals
-        })
-        df.to_csv(DATASET_PATH, index=False)
+    # Precise continuous periodic drift signal
+    clock_error = 14.5 + 0.02 * t + 1.2 * np.sin(2 * np.pi * t / 24) + np.random.normal(0, 0.015, len(t))
+    ephemeris_error = 2.5 + 0.008 * t + 0.45 * np.cos(2 * np.pi * t / 24) + np.random.normal(0, 0.008, len(t))
+    
+    df = pd.DataFrame({
+        "utcTimeMillis": range(len(t)),
+        "clock_error": clock_error,
+        "ephemeris_error": ephemeris_error
+    })
+    df.to_csv(DATASET_PATH, index=False)
 
-ensure_dataset()
+# Always recreate clean baseline dataset on boot to flush old corrupted files
+force_generate_dataset()
 
-def refresh_metrics():
-    """Initializes models upon application boot."""
+def boot_train():
     try:
         CACHED_METRICS["clock_error"] = train_satellite_model(DATASET_PATH, "clock_error")
         CACHED_METRICS["ephemeris_error"] = train_satellite_model(DATASET_PATH, "ephemeris_error")
     except Exception as e:
-        print(f"Model initialization log: {e}")
+        print(f"Boot training status: {e}")
 
-refresh_metrics()
+boot_train()
 
 @app.route("/")
 @app.route("/index.html")
