@@ -4,18 +4,24 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify
 from ml_model import train_satellite_model, predict_day_8
 
-app = Flask(__name__, template_folder=".")
-DATASET_PATH = os.path.join("data", "satellite_data.csv")
+# Calculate absolute paths to resolve template location errors on deployment servers (Linux/Render)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
+
+DATASET_PATH = os.path.join(BASE_DIR, "data", "satellite_data.csv")
 CACHED_METRICS = {}
 
 def ensure_dataset():
     """Validates raw CSV sources and prepares cleaned target columns."""
-    os.makedirs("data", exist_ok=True)
+    os.makedirs(os.path.join(BASE_DIR, "data"), exist_ok=True)
     
     if os.path.exists(DATASET_PATH):
         return
 
-    raw_filename = "satellite_data_2.csv" if os.path.exists("satellite_data_2.csv") else "satellite_data.csv"
+    raw_filename = os.path.join(BASE_DIR, "satellite_data_2.csv") if os.path.exists(os.path.join(BASE_DIR, "satellite_data_2.csv")) else os.path.join(BASE_DIR, "satellite_data.csv")
     
     if os.path.exists(raw_filename):
         try:
@@ -155,4 +161,5 @@ if __name__ == "__main__":
             CACHED_METRICS["ephemeris_error"] = train_satellite_model(DATASET_PATH, "ephemeris_error")
         except Exception as e:
             print(f"Startup notice: {e}")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
