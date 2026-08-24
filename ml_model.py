@@ -1,33 +1,34 @@
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.linear_model import Ridge
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import TimeSeriesSplit
 
 SAVED_MODELS = {}
+SCALERS = {}
 
 def engineer_features_from_sequence(seq):
-    """Transforms a 7-day time-series window into engineered predictive features."""
+    """Transforms a 7-day time-series sequence into rich trend, momentum, and statistical features."""
     seq = np.array(seq, dtype=float)
     feats = {}
     
-    # 1. Base Lags (lag_1 = day 7, lag_7 = day 1)
+    # 1. Base Lags (lag_1 = Day 7, lag_7 = Day 1)
     for i in range(1, 8):
         feats[f'lag_{i}'] = seq[-i]
         
-    # 2. Trend Metrics (Velocity & Acceleration)
+    # 2. Velocity and Acceleration (1st & 2nd Order Differences)
     feats['diff_1'] = seq[-1] - seq[-2]
     feats['diff_2'] = seq[-2] - seq[-3]
     feats['accel'] = feats['diff_1'] - feats['diff_2']
     
-    # 3. Rolling Statistics & Exponential Moving Average
+    # 3. Aggregations & Moving Averages
     feats['rolling_mean_3'] = np.mean(seq[-3:])
     feats['rolling_mean_7'] = np.mean(seq)
     feats['rolling_std_7'] = np.std(seq)
     feats['rolling_min_7'] = np.min(seq)
     feats['rolling_max_7'] = np.max(seq)
     
+    # Exponential Weighted Moving Average (EWMA)
     weights = np.exp(np.linspace(-1.0, 0.0, 7))
     weights /= weights.sum()
     feats['ema_7'] = np.sum(seq * weights)
@@ -41,7 +42,7 @@ def engineer_features_from_sequence(seq):
     return df_feats[ordered_cols]
 
 def build_dataset_from_series(series, lags=7):
-    """Constructs a sliding window supervised learning dataset."""
+    """Constructs sliding window matrix from target error values."""
     X_list, y_list = [], []
     for i in range(lags, len(series)):
         window = series.iloc[i-lags:i].values
@@ -54,7 +55,7 @@ def build_dataset_from_series(series, lags=7):
     return X, y
 
 def train_satellite_model(data_path, target_column="clock_error"):
-    """Trains Gradient Boosting + Ridge ensemble with validated time-series evaluation metrics."""
+    """Trains a scaled Random Forest + Gradient Boosting ensemble model optimized for high R² and low MAE."""
     df = pd.read_csv(data_path)
     if target_column not in df.columns:
         raise ValueError(f"Target column '{target_column}' not found in dataset.")
@@ -62,21 +63,40 @@ def train_satellite_model(data_path, target_column="clock_error"):
     series = df[target_column].dropna().reset_index(drop=True)
     X, y = build_dataset_from_series(series, lags=7)
     
+    # Chronological Train/Test Split (80/20)
     split = int(len(X) * 0.8)
     X_train, X_test = X.iloc[:split], X.iloc[split:]
     y_train, y_test = y[:split], y[split:]
     
-    gbr = GradientBoostingRegressor(n_estimators=120, learning_rate=0.04, max_depth=3, random_state=42)
-    ridge = Ridge(alpha=0.5)
+    # Standardize Features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     
-    gbr.fit(X_train, y_train)
-    ridge.fit(X_train, y_train)
+    # Optimized High-Performance Estimators
+    gbr = GradientBoostingRegressor(
+        n_estimators=300,
+        learning_rate=0.03,
+        max_depth=5,
+        subsample=0.85,
+        random_state=42
+    )
+    rf = RandomForestRegressor(
+        n_estimators=200,
+        max_depth=10,
+        random_state=42
+    )
     
-    SAVED_MODELS[target_column] = {"gbr": gbr, "ridge": ridge}
+    gbr.fit(X_train_scaled, y_train)
+    rf.fit(X_train_scaled, y_train)
     
-    pred_gbr = gbr.predict(X_test)
-    pred_ridge = ridge.predict(X_test)
-    y_pred = 0.65 * pred_gbr + 0.35 * pred_ridge
+    SAVED_MODELS[target_column] = {"gbr": gbr, "rf": rf}
+    SCALERS[target_column] = scaler
+    
+    # Weighted Ensemble Predictions
+    p_gbr = gbr.predict(X_test_scaled)
+    p_rf = rf.predict(X_test_scaled)
+    y_pred = 0.5 * p_gbr + 0.5 * p_rf
     
     mae = float(mean_absolute_error(y_test, y_pred))
     rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
@@ -91,14 +111,19 @@ def train_satellite_model(data_path, target_column="clock_error"):
     }
 
 def predict_day_8(last_7_days, target_column="clock_error"):
-    """Predicts day 8 error value from 7 continuous historical points."""
+    """Predicts Day 8 satellite error value using calibrated feature scaling."""
     if target_column not in SAVED_MODELS:
         raise ValueError(f"Model for '{target_column}' is not trained yet.")
         
-    models = SAVED_MODELS[target_column]
-    feats = engineer_features_from_sequence(last_7_days)
+    gbr = SAVED_MODELS[target_column]["gbr"]
+    rf = SAVED_MODELS[target_column]["rf"]
+    scaler = SCALERS[target_column]
     
-    p_gbr = models["gbr"].predict(feats)[0]
-    p_ridge = models["ridge"].predict(feats)[0]
+    raw_feats = engineer_features_from_sequence(last_7_days)
+    scaled_feats = scaler.transform(raw_feats)
     
-    return round(float(0.65 * p_gbr + 0.35 * p_ridge), 4)
+    pred_gbr = gbr.predict(scaled_feats)[0]
+    pred_rf = rf.predict(scaled_feats)[0]
+    
+    ensemble_pred = 0.5 * pred_gbr + 0.5 * pred_rf
+    return round(float(ensemble_pred), 4)
