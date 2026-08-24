@@ -4,7 +4,6 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify
 from ml_model import train_satellite_model, predict_day_8
 
-# Calculate absolute paths to resolve template location errors on deployment servers (Linux/Render)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
@@ -29,7 +28,6 @@ def ensure_dataset():
             clean_data = {}
             clean_data["utcTimeMillis"] = df["utcTimeMillis"] if "utcTimeMillis" in df.columns else range(len(df))
             
-            # Map clock bias error
             if "clock_error" in df.columns:
                 clean_data["clock_error"] = df["clock_error"]
             elif "SvClockBiasMeters" in df.columns:
@@ -37,7 +35,6 @@ def ensure_dataset():
             else:
                 clean_data["clock_error"] = np.random.uniform(10.0, 20.0, len(df))
 
-            # Map ephemeris positional error
             if "ephemeris_error" in df.columns:
                 clean_data["ephemeris_error"] = df["ephemeris_error"]
             elif "PositionErrorMeters" in df.columns:
@@ -53,7 +50,6 @@ def ensure_dataset():
         except Exception as error:
             print(f"Dataset parsing notice: {error}")
 
-    # Fallback synthetic generator for testing
     t = np.arange(400)
     clock_vals = 12.0 + 0.05 * t + 2.5 * np.sin(2 * np.pi * t / 12) + np.random.normal(0, 0.1, len(t))
     ephemeris_vals = 3.5 + 0.02 * t + 1.2 * np.cos(2 * np.pi * t / 16) + np.random.normal(0, 0.05, len(t))
@@ -65,7 +61,14 @@ def ensure_dataset():
     })
     synthetic_df.to_csv(DATASET_PATH, index=False)
 
+# Initialize dataset and train models on boot (runs under Gunicorn module import)
 ensure_dataset()
+if os.path.exists(DATASET_PATH):
+    try:
+        CACHED_METRICS["clock_error"] = train_satellite_model(DATASET_PATH, "clock_error")
+        CACHED_METRICS["ephemeris_error"] = train_satellite_model(DATASET_PATH, "ephemeris_error")
+    except Exception as e:
+        print(f"Startup training notice: {e}")
 
 @app.route("/")
 @app.route("/index.html")
@@ -119,7 +122,13 @@ def predict():
         if not isinstance(last_7_days, list) or len(last_7_days) != 7:
             return jsonify({"success": False, "message": "Exactly 7 numerical values required."}), 400
 
-        prediction = predict_day_8(last_7_days, target_column=target_column)
+        # Auto-train target column on the fly if not already present
+        try:
+            prediction = predict_day_8(last_7_days, target_column=target_column)
+        except Exception:
+            train_satellite_model(DATASET_PATH, target_column)
+            prediction = predict_day_8(last_7_days, target_column=target_column)
+
         return jsonify({"success": True, "prediction": prediction})
     except Exception as error:
         return jsonify({"success": False, "message": str(error)}), 500
@@ -155,11 +164,5 @@ def evaluate_model():
         return jsonify({"success": False, "message": str(e)}), 500
 
 if __name__ == "__main__":
-    if os.path.exists(DATASET_PATH):
-        try:
-            CACHED_METRICS["clock_error"] = train_satellite_model(DATASET_PATH, "clock_error")
-            CACHED_METRICS["ephemeris_error"] = train_satellite_model(DATASET_PATH, "ephemeris_error")
-        except Exception as e:
-            print(f"Startup notice: {e}")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
