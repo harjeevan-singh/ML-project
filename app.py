@@ -61,7 +61,7 @@ def ensure_dataset():
     })
     synthetic_df.to_csv(DATASET_PATH, index=False)
 
-# Initialize dataset and train models on boot (runs under Gunicorn module import)
+# Initialize dataset and train models on boot
 ensure_dataset()
 if os.path.exists(DATASET_PATH):
     try:
@@ -75,18 +75,22 @@ if os.path.exists(DATASET_PATH):
 def home():
     return render_template("index.html")
 
+@app.route("/about")
 @app.route("/about.html")
 def about():
     return render_template("about.html")
 
+@app.route("/analytics")
 @app.route("/analytics.html")
 def analytics():
     return render_template("analytics.html")
 
+@app.route("/dashboard")
 @app.route("/dashboard.html")
 def dashboard():
     return render_template("dashboard.html")
 
+@app.route("/prediction")
 @app.route("/prediction.html")
 def prediction_page():
     return render_template("prediction.html")
@@ -108,7 +112,11 @@ def train():
         target_column = data.get("target_column", "clock_error")
         metrics = train_satellite_model(DATASET_PATH, target_column)
         CACHED_METRICS[target_column] = metrics
-        return jsonify({"success": True, "message": "Model trained successfully with Gradient Boosting.", "metrics": metrics})
+        return jsonify({
+            "success": True,
+            "message": "Model trained successfully with Gradient Boosting Ensemble.",
+            "metrics": metrics
+        })
     except Exception as error:
         return jsonify({"success": False, "message": str(error)}), 500
 
@@ -122,7 +130,6 @@ def predict():
         if not isinstance(last_7_days, list) or len(last_7_days) != 7:
             return jsonify({"success": False, "message": "Exactly 7 numerical values required."}), 400
 
-        # Auto-train target column on the fly if not already present
         try:
             prediction = predict_day_8(last_7_days, target_column=target_column)
         except Exception:
@@ -152,6 +159,9 @@ def evaluate_model():
         return jsonify({
             "success": True,
             "metrics": {
+                "mae": round(mae, 4) if mae is not None else "N/A",
+                "rmse": round(rmse, 4) if rmse is not None else "N/A",
+                "r2": round(r2, 4) if r2 is not None else "N/A",
                 "MAE": round(mae, 4) if mae is not None else "N/A",
                 "RMSE": round(rmse, 4) if rmse is not None else "N/A",
                 "R2_Score": round(r2, 4) if r2 is not None else "N/A",

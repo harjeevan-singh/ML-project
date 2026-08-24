@@ -4,7 +4,6 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import TimeSeriesSplit
 
-# Memory registry for trained ensemble models per target metric
 SAVED_MODELS = {}
 
 def remove_outliers_iqr(series):
@@ -46,7 +45,13 @@ def engineer_features_from_sequence(seq):
     weights /= weights.sum()
     feats['ema_7'] = np.sum(seq * weights)
 
-    return pd.DataFrame([feats])
+    df_feats = pd.DataFrame([feats])
+    ordered_cols = [f'lag_{i}' for i in range(1, 8)] + [
+        'diff_1', 'diff_2', 'diff_2nd',
+        'rolling_mean_3', 'rolling_mean_7', 'rolling_std_7',
+        'rolling_min_7', 'rolling_max_7', 'rolling_range_7', 'ema_7'
+    ]
+    return df_feats[ordered_cols]
 
 def build_dataset_from_series(series, lags=7):
     """Constructs the complete supervised training matrix from input time-series data."""
@@ -77,10 +82,12 @@ def train_satellite_model(data_path, target_column="clock_error"):
     target_series = df[target_column].dropna()
     X, y = build_dataset_from_series(target_series, lags=7)
     
-    # 5-fold TimeSeriesSplit cross-validation
+    # 5-fold TimeSeriesSplit cross-validation evaluation
     tscv = TimeSeriesSplit(n_splits=5)
+    cv_scores = []
     for train_idx, val_idx in tscv.split(X):
         X_tr, y_tr = X.iloc[train_idx], y[train_idx]
+        X_val, y_val = X.iloc[val_idx], y[val_idx]
         
         gbr_temp = GradientBoostingRegressor(n_estimators=100, learning_rate=0.03, max_depth=4, random_state=42)
         ridge_temp = Ridge(alpha=1.0)
@@ -88,6 +95,11 @@ def train_satellite_model(data_path, target_column="clock_error"):
         gbr_temp.fit(X_tr, y_tr)
         ridge_temp.fit(X_tr, y_tr)
         
+        p_gbr = gbr_temp.predict(X_val)
+        p_ridge = ridge_temp.predict(X_val)
+        val_pred = 0.6 * p_gbr + 0.4 * p_ridge
+        cv_scores.append(np.mean(np.abs(y_val - val_pred)))
+
     # Final production train/test split (80/20)
     split = int(len(X) * 0.8)
     X_train, X_test = X.iloc[:split], X.iloc[split:]
@@ -121,6 +133,7 @@ def train_satellite_model(data_path, target_column="clock_error"):
         "mae": mae,
         "rmse": rmse,
         "r2": r2,
+        "cv_mae": float(np.mean(cv_scores)) if cv_scores else mae,
         "test_actual": y_test.tolist(),
         "test_predictions": y_pred.tolist()
     }
@@ -134,12 +147,10 @@ def predict_day_8(last_7_days, target_column="clock_error"):
     gbr = model_dict["gbr"]
     ridge = model_dict["ridge"]
     
-    # Build complete feature row from input values
     input_feats = engineer_features_from_sequence(last_7_days)
     
     pred_gbr = gbr.predict(input_feats)[0]
     pred_ridge = ridge.predict(input_feats)[0]
     
-    # Weighted ensemble outcome
     ensemble_pred = 0.6 * pred_gbr + 0.4 * pred_ridge
     return round(float(ensemble_pred), 4)

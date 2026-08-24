@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const path = window.location.pathname.toLowerCase();
 
-    if (path.endsWith("dashboard.html") || path.endsWith("/dashboard") || path === "/") {
+    if (path.endsWith("dashboard.html") || path.endsWith("/dashboard")) {
         initDashboard();
     } else if (path.endsWith("prediction.html") || path.endsWith("/prediction")) {
         initPredictionPage();
@@ -20,8 +20,8 @@ async function initDashboard() {
             const rmseElem = document.getElementById("rmse-value");
             const statusElem = document.getElementById("accuracy-status");
 
-            if (maeElem) maeElem.innerText = data.metrics.MAE;
-            if (rmseElem) rmseElem.innerText = data.metrics.RMSE;
+            if (maeElem) maeElem.innerText = typeof data.metrics.MAE === 'number' ? data.metrics.MAE.toFixed(4) : data.metrics.MAE;
+            if (rmseElem) rmseElem.innerText = typeof data.metrics.RMSE === 'number' ? data.metrics.RMSE.toFixed(4) : data.metrics.RMSE;
             if (statusElem) statusElem.innerText = data.metrics.Accuracy_Status;
 
             renderComparisonChart(".fake-chart", data.metrics.test_actual, data.metrics.test_predictions);
@@ -41,6 +41,7 @@ function initPredictionPage() {
 async function handlePredictionSubmit(event) {
     event.preventDefault();
     const resultElement = document.getElementById("prediction-result");
+    const messageElement = document.getElementById("predictionMessage");
     const inputField = document.getElementById("last-7-values");
     const errorTypeSelect = document.getElementById("errorType");
 
@@ -49,36 +50,58 @@ async function handlePredictionSubmit(event) {
     const values = inputField.value.split(',').map(v => parseFloat(v.trim()));
 
     if (values.length !== 7 || values.some(isNaN)) {
-        resultElement.innerText = "Error: Please enter exactly 7 valid numbers.";
+        resultElement.innerText = "Error";
         resultElement.style.color = "#ff4d4d";
+        if (messageElement) {
+            messageElement.innerText = "Please enter exactly 7 valid numerical values separated by commas.";
+            messageElement.style.color = "#ff4d4d";
+        }
         return;
     }
 
-    resultElement.innerText = "Running Gradient Boosting Ensemble...";
+    resultElement.innerText = "...";
     resultElement.style.color = "#00d2ff";
+    if (messageElement) {
+        messageElement.innerText = "Running Gradient Boosting Ensemble model...";
+        messageElement.style.color = "#94a3b8";
+    }
 
     try {
+        const targetCol = errorTypeSelect ? errorTypeSelect.value : "clock_error";
         const response = await fetch('/api/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 last_7_days: values,
-                target_column: errorTypeSelect ? errorTypeSelect.value : "clock_error"
+                target_column: targetCol
             })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            resultElement.innerText = `Day 8 Predicted Error: ${data.prediction.toFixed(4)}`;
+            resultElement.innerText = data.prediction.toFixed(4);
             resultElement.style.color = "#00ff88";
+            if (messageElement) {
+                const labelName = targetCol === "clock_error" ? "Clock Error" : "Ephemeris Error";
+                messageElement.innerText = `Day 8 predicted ${labelName} calculated successfully.`;
+                messageElement.style.color = "#00ff88";
+            }
         } else {
-            resultElement.innerText = `Error: ${data.message}`;
+            resultElement.innerText = "Error";
             resultElement.style.color = "#ff4d4d";
+            if (messageElement) {
+                messageElement.innerText = data.message;
+                messageElement.style.color = "#ff4d4d";
+            }
         }
     } catch (error) {
-        resultElement.innerText = "Backend connection error.";
+        resultElement.innerText = "Failed";
         resultElement.style.color = "#ff4d4d";
+        if (messageElement) {
+            messageElement.innerText = "Backend connection error. Please try again.";
+            messageElement.style.color = "#ff4d4d";
+        }
     }
 }
 
@@ -100,9 +123,12 @@ async function loadAnalyticsMetrics() {
             const rmseElem = document.getElementById("analytics-rmse");
             const accElem = document.getElementById("analytics-accuracy");
 
-            if (maeElem) maeElem.innerText = data.metrics.MAE;
-            if (rmseElem) rmseElem.innerText = data.metrics.RMSE;
-            if (accElem) accElem.innerText = `${data.metrics.Accuracy_Status} (R²: ${data.metrics.R2_Score})`;
+            if (maeElem) maeElem.innerText = typeof data.metrics.MAE === 'number' ? data.metrics.MAE.toFixed(4) : data.metrics.MAE;
+            if (rmseElem) rmseElem.innerText = typeof data.metrics.RMSE === 'number' ? data.metrics.RMSE.toFixed(4) : data.metrics.RMSE;
+            if (accElem) {
+                const r2Val = typeof data.metrics.R2_Score === 'number' ? data.metrics.R2_Score.toFixed(4) : data.metrics.R2_Score;
+                accElem.innerText = `${data.metrics.Accuracy_Status} (R²: ${r2Val})`;
+            }
 
             renderComparisonChart("#analytics-chart-container", data.metrics.test_actual, data.metrics.test_predictions);
         }
@@ -157,7 +183,9 @@ async function handleModelTraining() {
         const data = await response.json();
 
         if (data.success && statusBox) {
-            statusBox.innerText = `Retrained successfully! MAE: ${data.metrics.mae.toFixed(4)}, R²: ${data.metrics.r2.toFixed(4)}`;
+            const maeVal = data.metrics.mae !== undefined ? data.metrics.mae : data.metrics.MAE;
+            const r2Val = data.metrics.r2 !== undefined ? data.metrics.r2 : data.metrics.R2_Score;
+            statusBox.innerText = `Retrained successfully! MAE: ${Number(maeVal).toFixed(4)}, R²: ${Number(r2Val).toFixed(4)}`;
             loadAnalyticsMetrics();
         } else if (statusBox) {
             statusBox.innerText = `Training error: ${data.message}`;

@@ -3,20 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>OrbitIQ | Satellite Intelligence</title>
-
     <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
 
 <header class="navbar">
-
     <div class="logo">
         <span>◉</span> OrbitIQ
     </div>
-
     <nav>
         <a href="/" class="active">Home</a>
         <a href="dashboard.html">Dashboard</a>
@@ -24,97 +19,73 @@
         <a href="analytics.html">Analytics</a>
         <a href="about.html">About</a>
     </nav>
-
 </header>
 
-
-<main>
-
-<section class="hero">
-
-    <div class="hero-content">
-
-        <p class="tag">AI • SATELLITE • INTELLIGENCE</p>
-
-        <h1>
-            Predicting the
-            <span>Future</span>
-            of Satellite Errors
-        </h1>
-
-        <p class="hero-text">
-            OrbitIQ uses AI and machine learning to analyze satellite
-            clock and ephemeris error patterns and predict future behavior.
-        </p>
-
-        <div class="hero-buttons">
-
-            <a href="dashboard.html" class="btn primary-btn">
-                Open Dashboard
-            </a>
-
-            <a href="prediction.html" class="btn secondary-btn">
-                Try Prediction
-            </a>
-
+<main class="page">
+    <section class="hero">
+        <div class="hero-content">
+            <p class="tag">AI • SATELLITE • INTELLIGENCE</p>
+            <h1>
+                Predicting the
+                <span>Future</span>
+                of Satellite Errors
+            </h1>
+            <p class="hero-text">
+                OrbitIQ uses AI and machine learning to analyze satellite
+                clock and ephemeris error patterns and predict future behavior.
+            </p>
+            <div class="hero-buttons">
+                <a href="dashboard.html" class="btn primary-btn">
+                    Open Dashboard
+                </a>
+                <a href="prediction.html" class="btn secondary-btn">
+                    Try Prediction
+                </a>
+            </div>
         </div>
 
-    </div>
+        <div class="orbit-card">
+            <div class="orbit-circle">
+                <div class="satellite">✦</div>
+            </div>
+            <div class="orbit-info">
+                <span>ORBITIQ SYSTEM</span>
+                <strong>ONLINE</strong>
+            </div>
+        </div>
+    </section>
 
-
-    <div class="orbit-card">
-
-        <div class="orbit-circle">
-            <div class="satellite">✦</div>
+    <section class="features">
+        <div class="feature-card pink">
+            <div class="feature-icon">◈</div>
+            <h3>7-Day Dataset</h3>
+            <p>
+                Analyze historical satellite clock and ephemeris error data.
+            </p>
         </div>
 
-        <div class="orbit-info">
-            <span>ORBITIQ SYSTEM</span>
-            <strong>ONLINE</strong>
+        <div class="feature-card teal">
+            <div class="feature-icon">◉</div>
+            <h3>AI Prediction</h3>
+            <p>
+                Predict the expected error pattern for the 8th day.
+            </p>
         </div>
 
-    </div>
-
-</section>
-
-
-<section class="features">
-
-    <div class="feature-card pink">
-        <div class="feature-icon">◈</div>
-        <h3>7-Day Dataset</h3>
-        <p>
-            Analyze historical satellite clock and ephemeris error data.
-        </p>
-    </div>
-
-    <div class="feature-card teal">
-        <div class="feature-icon">◉</div>
-        <h3>AI Prediction</h3>
-        <p>
-            Predict the expected error pattern for the 8th day.
-        </p>
-    </div>
-
-    <div class="feature-card cyan">
-        <div class="feature-icon">↗</div>
-        <h3>Accuracy Metrics</h3>
-        <p>
-            Evaluate the model using suitable time-series metrics.
-        </p>
-    </div>
-
-</section>
-
+        <div class="feature-card cyan">
+            <div class="feature-icon">↗</div>
+            <h3>Accuracy Metrics</h3>
+            <p>
+                Evaluate the model using suitable time-series metrics.
+            </p>
+        </div>
+    </section>
 </main>
-
 
 <footer>
     <p>© 2026 OrbitIQ | Satellite Error Prediction using AI/ML</p>
 </footer>
 
-
 <script src="/static/script.js"></script>
-
 </body>
 </html>
