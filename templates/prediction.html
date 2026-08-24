@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrbitIQ | Prediction</title>
+    <link rel="stylesheet" href="/static/style.css">    
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo"><span>◉</span> OrbitIQ</div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="prediction.html" class="active">Prediction</a>
+        <a href="analytics.html">Analytics</a>
+        <a href="about.html">About</a>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="page-heading">
+        <p class="tag">AI / MACHINE LEARNING</p>
+        <h1>8th Day Prediction</h1>
+        <p>Predict satellite clock and ephemeris error using historical time-series data.</p>
+    </div>
+
+    <section class="prediction-container">
+        <form class="panel" id="predict-form">
+            <h2>Prediction Settings</h2>
+
+            <label for="last-7-values">Enter 7 Historical Data Points (comma-separated):</label>
+            <input type="text" id="last-7-values" placeholder="10.2, 11.5, 12.1, 11.8, 10.9, 10.1, 9.8" style="width: 100%; padding: 12px; border: 2px solid #069494; border-radius: 8px;" required>
+
+            <label for="errorType">Error Type</label>
+            <select id="errorType">
+                <option value="clock_error">Clock Error</option>
+                <option value="ephemeris_error">Ephemeris Error</option>
+            </select>
+
+            <button type="submit" class="btn primary-btn" id="predictBtn" style="margin-top: 20px;">Run Prediction</button>
+        </form>
+
+        <div class="prediction-result panel">
+            <p class="tag">PREDICTION RESULT</p>
+            <div id="prediction-result" style="font-size: 32px; font-weight: 800; margin: 20px 0; color: #00F0FF;">--</div>
+            <p id="predictionMessage">Enter historical values and click Run Prediction.</p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2026 OrbitIQ | AI Prediction</p>
+</footer>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

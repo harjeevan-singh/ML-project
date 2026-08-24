@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrbitIQ | Analytics</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <span>◉</span> OrbitIQ
+    </div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="prediction.html">Prediction</a>
+        <a href="analytics.html" class="active">Analytics</a>
+        <a href="about.html">About</a>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="page-heading">
+        <p class="tag">DATA ANALYTICS</p>
+        <h1>Model Analytics</h1>
+        <p>Evaluate the performance of the satellite error prediction model.</p>
+    </div>
+
+    <section class="stats">
+        <div class="stat-card pink">
+            <span>MAE</span>
+            <strong id="analytics-mae">--</strong>
+            <p>Mean Absolute Error</p>
+        </div>
+
+        <div class="stat-card teal">
+            <span>RMSE</span>
+            <strong id="analytics-rmse">--</strong>
+            <p>Root Mean Square Error</p>
+        </div>
+
+        <div class="stat-card cyan">
+            <span>ACCURACY STATUS</span>
+            <strong id="analytics-accuracy">Ready</strong>
+            <p>Model Performance</p>
+        </div>
+    </section>
+
+    <section class="panel analytics-panel">
+        <h2>Model Training & Control</h2>
+        <p style="margin-bottom: 15px; color: #555;">Retrain the Random Forest regressor on the latest satellite dataset.</p>
+        <button class="btn primary-btn" id="train-model-btn">Train Model</button>
+        <p id="train-status" style="margin-top: 15px; font-weight: 600; color: #069494;"></p>
+    </section>
+
+    <section class="panel analytics-panel" style="margin-top: 25px;">
+        <h2>Test Predictions Chart</h2>
+        <div class="analytics-chart" id="analytics-chart-container">
+            <div class="bar" style="height:45%"></div>
+            <div class="bar" style="height:65%"></div>
+            <div class="bar" style="height:55%"></div>
+            <div class="bar" style="height:80%"></div>
+            <div class="bar" style="height:70%"></div>
+            <div class="bar" style="height:90%"></div>
+            <div class="bar" style="height:75%"></div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2026 OrbitIQ | Analytics</p>
+</footer>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

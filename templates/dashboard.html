@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrbitIQ | Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <span>◉</span> OrbitIQ
+    </div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="prediction.html">Prediction</a>
+        <a href="analytics.html">Analytics</a>
+        <a href="about.html">About</a>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="page-heading">
+        <p class="tag">ORBITIQ MONITORING</p>
+        <h1>Satellite Dashboard</h1>
+        <p>Monitor satellite clock and ephemeris error patterns.</p>
+    </div>
+
+    <section class="stats">
+        <div class="stat-card pink">
+            <span>MAE</span>
+            <strong id="mae-value">--</strong>
+            <p>Mean Absolute Error</p>
+        </div>
+
+        <div class="stat-card teal">
+            <span>RMSE</span>
+            <strong id="rmse-value">--</strong>
+            <p>Root Mean Square Error</p>
+        </div>
+
+        <div class="stat-card cyan">
+            <span>MODEL</span>
+            <strong>Random Forest</strong>
+            <p>Time-series Regressor</p>
+        </div>
+
+        <div class="stat-card white-card">
+            <span>STATUS</span>
+            <strong id="accuracy-status">Loading...</strong>
+            <p>System Operational</p>
+        </div>
+    </section>
+
+    <section class="dashboard-grid">
+        <div class="panel large-panel">
+            <h2>Satellite Error Overview</h2>
+            <div class="fake-chart">
+                <div class="chart-line"></div>
+                <div class="chart-label">
+                    <span>Day 1</span>
+                    <span>Day 2</span>
+                    <span>Day 3</span>
+                    <span>Day 4</span>
+                    <span>Day 5</span>
+                    <span>Day 6</span>
+                    <span>Day 7</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>System Status</h2>
+            <div class="status">
+                <span class="status-dot"></span>
+                Dataset Loaded
+            </div>
+            <div class="status">
+                <span class="status-dot"></span>
+                Model Ready
+            </div>
+            <div class="status">
+                <span class="status-dot"></span>
+                Prediction Available
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2026 OrbitIQ | Dashboard</p>
+</footer>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
